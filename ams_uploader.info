@@ -1,0 +1,4 @@
+name = AMS Uploader
+description = Handles uploading of media to Drupal and moves them to appropriate areas on Adobe Media Server
+core = 7.x
+package = UNM University Libraries

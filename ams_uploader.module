@@ -1,0 +1,189 @@
+<?php
+/**
+ * @file
+ * A description of what your module does.
+ */
+
+/**
+ * Implements hook_node_access().
+ */
+function ams_uploader_node_access($node, $op, $account) {
+  $type = is_string($node) ? $node : $node->type;
+  //If user is viewing media content type and they are not auth user, don't show page
+  if ($type == 'media' && $op == 'view' && $node->field_authenticated[$node->language][0]['value'] == 1) {
+    if (in_array('anonymous user', $account->roles)) {
+      return NODE_ACCESS_DENY;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function ams_uploader_node_presave($node) {
+  if ($node->type == 'media') {
+    $fid = $node->field_media_upload[$node->language][0]['fid'];
+    $file = file_load($fid);
+    if (!empty($fid)) {
+      $appName = $node->field_authenticated[$node->language][0]['value'] == 0 ? 'vod' : 'unm';
+      $appDir = 'ams://' . $appName . '/media';
+      $subDir = empty($node->field_directory[$node->language][0]) ? '' : '/' . $node->field_directory[$node->language][0]['value'];
+      $newpath = $appDir . $subDir;
+
+      if (!empty($subDir) && !file_prepare_directory($newpath, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
+        throw new Exception('Error saving node: Cannot create new directory.');
+      }
+      //Complete path with filename
+      $newpath = $newpath . '/' . $file->filename;
+
+      //Only move file if a new location has been designated
+      if ($file->uri != $newpath) {
+        $file = file_move($file, $newpath, FILE_EXISTS_RENAME);
+        if ($file === FALSE) {
+          throw new Exception('Could not copy file to ' . $newpath . '. Check permissions.');
+        }
+      }
+
+      //Generate rtmp url for file
+      $url = 'rtmp://libmedia-old.unm.edu/' . $appName . '/';
+      $filename = pathinfo($file->filename, PATHINFO_FILENAME);
+      $ext = pathinfo($file->filename, PATHINFO_EXTENSION);
+      //Use extension to determine how to build the rtmp url correctly
+      if ($ext == 'mp4' || $ext == 'f4v') {
+        $amsExt = 'mp4' . ':';
+      }
+      else {
+        if ($ext == 'flv') {
+          $amsExt = '';
+          $ext = '';
+        }
+        else {
+          $amsExt = $ext . ':';
+        }
+      }
+      //Add dot to extension if it exists
+      if (!empty($ext)) {
+        $ext = '.' . $ext;
+      }
+      //Set rtmp url to text field
+      $node->field_media_url[$node->language][0]['value'] = $url . $amsExt . $filename . $ext;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function ams_uploader_field_formatter_info() {
+  return array(
+    'ams_formatter' => array(
+      'label' => 'AMS Player',
+      'description' => 'Flash player to embed videos/audo from Adobe Media Server',
+      'field types' => array('text'),
+      'settings' => array( //Array of the settings we'll create
+        'video_width' => '640', //default value for width
+        'video_height' => '480', //default for height
+      ),
+    )
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function ams_uploader_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  //This gets the view_mode where our settings are stored
+  $display = $instance['display'][$view_mode];
+  //This gets the actual settings
+  $settings = $display['settings'];
+  //Initialize the element variable
+  $element = array();
+  //Add your select box
+  $element['video_width'] = array(
+    '#type' => 'text',
+    '#title' => t('Video Width'),
+    '#description' => t('Set the width of the video (pixels)'),
+    '#default_value' => $settings['video_width'],
+  );
+  $element['video_height'] = array(
+    '#type' => 'text',
+    '#title' => t('Video Height'),
+    '#description' => t('Set the height of the video (pixels)'),
+    '#default_value' => $settings['video_height'],
+  );
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function ams_uploader_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $summary = t('Use width @widthpx and height @heightpx ', array(
+    '@width' => $settings['video_width'],
+    '@height' => $settings['video_height'],
+  )); // we use t() for translation and placeholders to guard against attacks
+  return $summary;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function ams_uploader_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array(); // Initialize the var
+  $mod_path = drupal_get_path('module', 'ams_uploader');
+  $settings = $display['settings']; // get the settings
+  $width = $settings['video_width'];
+  $height = $settings['video_height'];
+
+  $player = base_path() . $mod_path . '/swfs/StrobeMediaPlayback.swf';
+
+  // Create the object code
+  foreach ($items as $delta => $item) {
+    $url = $item['safe_value']; // Getting the actual value
+    //Generate object code with player and url embedded
+    $embedCode = '
+    <object type="application/x-shockwave-flash" data="' . $player . '"
+      width="' . $width . '" height="' . $height . '">
+      <param name="quality" value="high">
+      <param name="bgcolor" value="#000000">
+      <param name="allowscriptaccess" value="sameDomain">
+      <param name="allowfullscreen" value="true">
+      <param name="wmode" value="direct">
+      <param name="flashvars" value="src=' . $url . '">
+    </object>
+    ';
+  }
+  if (isset($embedCode)) {
+    $element[0]['#markup'] = $embedCode; // Assign it to the #markup of the element
+  }
+  return $element;
+}
+
+
+/**
+ * Custom Stream Wrapper for AMS application area
+ */
+/**
+ * Implements hook_stream_wrappers().
+ */
+function ams_uploader_stream_wrappers() {
+  return array(
+    'ams' => array(
+      'name' => t('AMS Application media files'),
+      'class' => 'AMSStreamWrapper',
+      'description' => t('Adobe Media server application files for streaming purposes.'),
+      'type' => STREAM_WRAPPERS_LOCAL_HIDDEN,
+    ),
+  );
+}
+
+/**
+ * Default files (ams://) stream wrapper class.
+ */
+class AMSStreamWrapper extends DrupalPublicStreamWrapper {
+  public function getDirectoryPath() {
+    return '/opt/adobe/ams/applications';
+  }
+}
