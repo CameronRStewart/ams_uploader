@@ -4,6 +4,37 @@
  * A description of what your module does.
  */
 
+function ams_uploader_menu() {
+  $items = array();
+
+  $items['admin/config/services/ams_uploader'] = array(
+    'title' => t('AMS Uploader Module Settings'),
+    'description' => 'Configure FQDN for media streaming server.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ams_uploader_admin_form'),
+    'access arguments' => array('administer ams uploader module settings'),
+    'file' => 'ams_uploader.admin_form.inc',
+    'type' => MENU_NORMAL_ITEM,
+    );
+
+  $items['admin/config/services/ams_uploader/settings'] = array(
+    'title' => t('Settings'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+  );
+
+  return $items;
+}
+
+function course_info_permission() {
+  return array(
+    'administer ams uploader settings' => array(
+      'title' => t('Administer ams uploader configuration'),
+      'description' => t('Perform administration tasks on ams uploader module.'),
+    ),
+  );
+}
+
 /**
  * Implements hook_node_access().
  */
@@ -44,8 +75,17 @@ function ams_uploader_node_presave($node) {
         }
       }
 
+      //Grab the FQDN of the media stremaing server
+      $result = db_query('SELECT * FROM ams_uploader_admin_vars');
+
+      foreach ($result as $row) {
+        $fqdn = $row->name;
+      }
+
+
       //Generate rtmp url for file
-      $url = 'rtmp://libmedia-old.unm.edu/' . $appName . '/';
+
+      $url = 'rtmp://' . $fqdn . '/' . $appName . '/';
       $filename = pathinfo($file->filename, PATHINFO_FILENAME);
       $ext = pathinfo($file->filename, PATHINFO_EXTENSION);
       //Use extension to determine how to build the rtmp url correctly

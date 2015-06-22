@@ -1,0 +1,30 @@
+<?php
+
+function ams_uplaoder() {
+	$schema['ams_uploader_admin_vars'] = array(
+
+		'description' => t('Simple table to hold the FQDN of the media server.'),
+		'fields' => array(
+			'id' => array(
+				'description' => t('The primary ID for this FQDN field.'),
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				),
+			'name' => array(
+				'description' => t('The FQDN for the streaming media server.'),
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+				'default' => ''
+				),
+			'updated' => array(
+				'description' => t('UNIX timestamp of last update.'),
+				'type' => 'int',
+				'not null' => FALSE,
+				),
+			),
+			'primary key' => array('id'),
+		);
+	return $schema;
+}
