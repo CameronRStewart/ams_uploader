@@ -1,6 +1,6 @@
 <?php
 
-function ams_uplaoder() {
+function ams_uplaoder_schema() {
 	$schema['ams_uploader_admin_vars'] = array(
 
 		'description' => t('Simple table to hold the FQDN of the media server.'),
