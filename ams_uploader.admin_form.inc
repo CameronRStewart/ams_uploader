@@ -20,17 +20,20 @@ function ams_uploader_admin_form($form, &$form_state) {
 	}
 
 	if(isset($results) && !empty($results) && $count > 0) {
-		if(!isset($result->name) || empty($result->name)) {
-			$result->name = "libmedia.unm.edu";
+		foreach ($results as $row) {
+			if(!isset($row->name) || empty($row->name)) {
+				$row->name = "libmedia.unm.edu";
+			}
+
+
+			$form['server_name']['name'] = array(
+				'#type' => 'textfield',
+				'#title' => t('FQHN'),
+				'#required' => TRUE,
+				'#default_value' => $row->name,
+				);
 		}
 
-
-		$form['server_name']['name'] = array(
-			'#type' => 'textfield',
-			'#title' => t('FQHN'),
-			'#required' => TRUE,
-			'#default_value' => $result->name,
-			);
 	}
 	else {
 		$name = "libmedia.unm.edu";
