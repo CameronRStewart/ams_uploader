@@ -19,7 +19,7 @@ function ams_uploader_admin_form($form, &$form_state) {
 			);
 	}
 
-	if(isset($results) && !empty($results) && count > 0) {
+	if(isset($results) && !empty($results) && $count > 0) {
 		if(!isset($result->name) || empty($result->name)) {
 			$result->name = "libmedia.unm.edu";
 		}
