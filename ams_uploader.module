@@ -26,7 +26,7 @@ function ams_uploader_menu() {
   return $items;
 }
 
-function course_info_permission() {
+function ams_uploader_permission() {
   return array(
     'administer ams uploader settings' => array(
       'title' => t('Administer ams uploader configuration'),
