@@ -53,18 +53,18 @@ function ams_uploader_admin_form($form, &$form_state) {
 }
 
 function ams_uploader_admin_form_validate($form, &$form_state) {
-	$saved_name = $form_state['values']['server_name']['name'];
+	$saved_name = $form_state['values']['name'];
 	if (strstr($saved_name, 'http')){
 		form_set_error("server_name][name", 'Please only include the fully qualified domain name WITHOUT http or anything like it.  e.x. xxx.unm.edu.');
 	}
 }
 
 function ams_uploader_admin_form_submit($form, &$form_state) {
-	$saved_name = $form_state['values']['server_name']['name'];
+	$saved_name = $form_state['values']['name'];
 
 	$exists = db_query('SELECT * FROM ams_uploader_admin_vars')->fetchField();
 
-	if(!exists) {
+	if(!$exists) {
 		db_insert('ams_uploader_admin_vars')
 		->fields(array(
 			'name' => $saved_name,
