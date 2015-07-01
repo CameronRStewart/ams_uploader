@@ -85,7 +85,9 @@ function ams_uploader_node_presave($node) {
 
       //Generate rtmp url for file
 
-      $url = 'rtmp://' . $fqdn . '/' . $appName . $subdir . '/';
+
+      $subDir = empty($node->field_directory[$node->language][0]) ? '' : $node->field_directory[$node->language][0]['value'];
+      $url = 'rtmp://' . $fqdn . '/' . $appName . '/' . $subdir . '/';
       $filename = pathinfo($file->filename, PATHINFO_FILENAME);
       $ext = pathinfo($file->filename, PATHINFO_EXTENSION);
       //Use extension to determine how to build the rtmp url correctly
