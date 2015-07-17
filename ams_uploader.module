@@ -49,22 +49,42 @@ function ams_uploader_node_access($node, $op, $account) {
 }
 
 function ams_uploader_form_media_node_form_alter(&$form, &$form_state){
-    //$form['#validate'][] = 'ams_uploader_media_node_form_validate';
     array_unshift($form['#validate'], 'ams_uploader_media_node_form_validate');
+
+
+    $form['title']['#weight'] = -5;
+    $form['body']['#weight'] = 1;
+
+    $form['media_group'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Media Source:  Add an uploaded file OR an URL (Not Both).'),
+        '#weight' => 2,
+    );
+
+    $form['media_group']['field_media_upload'] = $form['field_media_upload'];
+    $form['media_group']['field_media_url'] = $form['field_media_url'];
+
+    unset($form['field_media_upload']);
+    unset($form['field_media_url']);
+
+    $form['field_authenticated']['#weight'] = 3;
+    $form['field_directory']['#weight'] = 4;
+    $form['field_category']['#weight'] = 5;
+    $form['field_tags']['#weight'] = 6;
+
+
     //dpm($form);
     //dpm($form_state);
+
     return $form;
 }
 
 function ams_uploader_media_node_form_validate($form, &$form_state){
-    dpm($form);
-    dpm($form_state);
+    //dpm($form);
+    //dpm($form_state);
 
     $media_url = $form_state['values']['field_media_url']['und'][0]['value'];
     $media_upload = $form_state['values']['field_media_upload']['und'][0]['fid'];
-
-    dpm($media_upload);
-    dpm($media_url);
 
     $has_value_url = isset($media_url) && !($media_url == "");
     $has_value_upload = isset($media_upload) && !($media_upload == 0);
@@ -73,11 +93,8 @@ function ams_uploader_media_node_form_validate($form, &$form_state){
         form_set_error('field_media_upload', t("You must EITHER upload a media file or enter a valid media url."));
         form_set_error('field_media_url');
     }
-    else if ($has_value_upload && $has_value_url){
+    if ($has_value_upload && $has_value_url){
         form_set_error('field_media_url', t('You may ONLY have EITHER a media file uploaded OR a media url.'));
-    }
-    else {
-        form_set_error('field_media_url', t("Passed Test"));
     }
 
 }
