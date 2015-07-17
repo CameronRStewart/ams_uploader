@@ -49,8 +49,13 @@ function ams_uploader_node_access($node, $op, $account) {
 }
 
 function ams_uploader_form_media_node_form_alter(&$form, &$form_state){
-    array_unshift($form['#validate'], 'ams_uploader_media_node_form_validate');
 
+    // For form builder functions, js must be added as such:
+    $form['#attached']['js'] = array(
+        drupal_get_path('module', 'ams_uploader') . '/scripts/ams_uploader.js',
+    );
+
+    array_unshift($form['#validate'], 'ams_uploader_media_node_form_validate');
 
     $form['title']['#weight'] = -5;
     $form['body']['#weight'] = 1;
