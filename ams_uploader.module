@@ -101,24 +101,71 @@ function ams_uploader_media_node_form_validate($form, &$form_state){
     if ($has_value_upload && $has_value_url){
         form_set_error('field_media_url', t('You may ONLY have EITHER a media file uploaded OR a media url.'));
     }
-    if($has_value_url && !(strpos($media_url, 'http') === 0 || strpos($media_url, 'rtmp') === 0)){
+    if($has_value_url && !(is_http($media_url) || is_rtmp($media_url))){
         form_set_error('field_media_url', t('You have entered an invalid media URL.  It must start with http, https, or rtmp.'));
+    }
+    if($has_value_url) {
+        // Make sure this stream exists
     }
 
 }
+
+function is_http($media_url) {
+    return (strpos($media_url, 'http') === 0);
+}
+
+function is_rtmp($media_url) {
+    return (strpos($media_url, 'rtmp') === 0);
+}
+
+function verify_local($media_url) {
+
+    // examples:
+    // mp4: rtmp://libmedia.unm.edu/vod/mp4:test3.f4v
+    // flv: rtmp://libmedia.unm.edu/unm/NavajoFilmThemselves/NavajoFilmThemselves_1-2
+    // flv: http://libmedia.unm.edu/vod/bingaman/A1-05/F02.flv with a bunch of options after the &...
+
+    // Test for ':', grab from '/' to ':'.  Remove.  Now grab all but server name.
+    // If no ':' besides rtmp:, grab all but server name and add .flv.
+
+    $parsed_url_path = explode('/', $media_url, 4);
+    $parsed_url_path = $parsed_url_path[3];
+
+    if (is_http($media_url)) {
+        $local_path = 'ams://webroot/' . $parsed_url_path;
+    }
+    else if (is_rtmp($media_url)) {
+        $local_path = 'ams://applications/' . $parsed_url_path;
+    }
+    else {
+        return false;
+    }
+
+    if(file_exists($local_path)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+
+}
+
 
 /**
  * Implements hook_node_presave().
  */
 function ams_uploader_node_presave($node) {
     if ($node->type == 'media') {
-        // Media was uploaded, URL not set.
+        // Media was uploaded, URL not set.  Will be RTMP automatically.
         if(isset($node->field_media_upload[$node->language][0]['fid']) && !empty($node->field_media_upload[$node->language][0]['fid'])){
             $fid = $node->field_media_upload[$node->language][0]['fid'];
             $file = file_load($fid);
 
+            // For now we are moving all managed files to RTMP dirs.
+            $protocolDir = 'applications';
+
             $appName = $node->field_authenticated[$node->language][0]['value'] == 0 ? 'vod' : 'unm';
-            $appDir = 'ams://' . $appName . '/media';
+            $appDir = 'ams://' . $protocolDir . '/' . $appName . '/media';
             $subDir = empty($node->field_directory[$node->language][0]) ? '' : '/' . $node->field_directory[$node->language][0]['value'];
             $newpath = $appDir . $subDir;
 
@@ -176,17 +223,21 @@ function ams_uploader_node_presave($node) {
 
             // TODO: Eventually find a way to move HTTP streams into workflow allowing auth and associated file movement.
             // Currently we need do nothing with http streams.
-            //$pos_http = strpos($url, 'http');
 
-            $pos_rtmp = strpos($url, 'rtmp');
+            $is_local = verify_local($url);
 
             // This is an RTMP url
-            if ($pos_rtmp == 0) {
-
+            if (is_rtmp($url)) {
+                $trash = 'yup';
                 // Test if file is local?
                 // If so: load fid, create new node for it, then continue as above.
                 // Load directory structure from where it currently exists?
                 // Leave in place and move?
+
+            }
+            // This is an HTTP url
+            else if (is_http($url)) {
+                $trash = 'nope';
 
             }
 
@@ -300,7 +351,7 @@ function ams_uploader_stream_wrappers() {
         'ams' => array(
             'name' => t('AMS Application media files'),
             'class' => 'AMSStreamWrapper',
-            'description' => t('Adobe Media server application files for streaming purposes.'),
+            'description' => t('Adobe Media server base directory for streaming purposes.'),
             'type' => STREAM_WRAPPERS_LOCAL_HIDDEN,
         ),
     );
@@ -311,6 +362,6 @@ function ams_uploader_stream_wrappers() {
  */
 class AMSStreamWrapper extends DrupalPublicStreamWrapper {
     public function getDirectoryPath() {
-        return '/opt/adobe/ams/applications';
+        return '/opt/adobe/ams';
     }
 }
