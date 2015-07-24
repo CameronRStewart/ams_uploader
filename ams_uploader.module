@@ -78,15 +78,10 @@ function ams_uploader_form_media_node_form_alter(&$form, &$form_state){
     $form['field_tags']['#weight'] = 6;
 
 
-    //dpm($form);
-    //dpm($form_state);
-
     return $form;
 }
 
 function ams_uploader_media_node_form_validate($form, &$form_state){
-    dpm($form);
-    dpm($form_state);
 
     $media_url = $form_state['values']['field_media_url']['und'][0]['value'];
     $media_upload = $form_state['values']['field_media_upload']['und'][0]['fid'];
@@ -129,10 +124,12 @@ function get_local_path_or_false($media_url) {
     // ams://applications/vod/media/test3.f4v
     // ams://applications/unm/media/NavajoFilmThemselves/NavajoFilmThemselves_1-2.flv
     // ams://webroot/vod/bingaman/A1-05/02.flv
-    // TODO: deal with http urls that have option strings at the end.
+
+    // TODO: deal with flv files with no extension
 
     $parsed_url_path = explode('/', $media_url, 4);
     $parsed_url_path = $parsed_url_path[3];
+
 
     if (is_http($media_url)) {
         $local_path = 'ams://webroot/' . $parsed_url_path;
@@ -154,11 +151,78 @@ function get_local_path_or_false($media_url) {
 }
 
 
+function get_new_path($appName, $subDir) {
+    // TODO: create seperate filesystem wrappers for RTMP and HTML urls.
+
+    $protocolDir = 'applications';
+    $appDir = 'ams://' . $protocolDir . '/' . $appName . '/media';
+    $newpath = $appDir . $subDir;
+
+    return $newpath;
+
+
+
+}
+
+function get_filename_and_extension($uri) {
+    $ext = pathinfo($uri, PATHINFO_EXTENSION);
+    $filename_no_ext = pathinfo($uri, PATHINFO_FILENAME);
+
+    //Use extension to determine how to build the rtmp url correctly
+    if ($ext == '' || empty($ext)) {
+        $ext = "flv";
+    }
+
+    $split_name = array($filename_no_ext, $ext);
+
+    return $split_name;
+
+}
+
+function generate_url($basename, $ext, $subDir, $appName) {
+    //Grab the FQDN of the media stremaing server
+    $result = db_query('SELECT * FROM ams_uploader_admin_vars');
+
+    foreach ($result as $row) {
+        $fqdn = $row->name;
+    }
+
+
+    //Generate rtmp url for file
+    if(!(empty($subDir)) || !($subDir == '')){
+        $subDir = $subDir . '/';
+    }
+
+    $url = 'rtmp://' . $fqdn . '/' . $appName . '/' . $subDir;
+    //Use extension to determine how to build the rtmp url correctly
+    if ($ext == 'mp4' || $ext == 'f4v') {
+        $amsExt = 'mp4' . ':';
+    }
+    else {
+        if ($ext == 'flv') {
+            $amsExt = '';
+            $ext = '';
+        }
+        else {
+            $amsExt = $ext . ':';
+        }
+    }
+    //Add dot to extension if it exists
+    if (!empty($ext)) {
+        $ext = '.' . $ext;
+    }
+
+    $new_url = $url . $amsExt . $basename . $ext;
+
+    return $new_url;
+}
+
 /**
  * Implements hook_node_presave().
  */
 function ams_uploader_node_presave($node) {
-    dpm($node);
+
+    global $user;
     if ($node->type == 'media') {
         // Media was uploaded, URL not set.  Will be RTMP automatically.
         if(isset($node->field_media_upload[$node->language][0]['fid']) && !empty($node->field_media_upload[$node->language][0]['fid'])) {
@@ -167,13 +231,30 @@ function ams_uploader_node_presave($node) {
         } else if (isset($node->field_media_url[$node->language][0]['value'])) {
             $url = $node->field_media_url[$node->language][0]['value'];
 
-            // TODO: Eventually find a way to move HTTP streams into workflow allowing auth and associated file movement.
-            // Currently we need do nothing with http streams.
-
             $is_local_uri = get_local_path_or_false($url);
 
             if($is_local_uri) {
-                $file = file_uri_to_object($is_local_uri, $use_existing = TRUE);
+                list($filename_no_ext, $ext) = get_filename_and_extension($is_local_uri);
+                $filename = $filename_no_ext . '.' . $ext;
+                $file = new stdClass;
+                $file->uid = $user->uid;
+                $file->filename = $filename;
+                $file->uri = $is_local_uri;
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = finfo_file($finfo, $is_local_uri);
+                finfo_close($finfo);
+                $file->filemime = $mime;
+                $file->filesize = filesize($is_local_uri);
+                $file->status = 1;
+                file_save($file);
+
+                $type = 'streaming media file';
+                $id = $file->fid;
+                file_usage_add($file, 'ams_uploader', $type, $id);
+
+                if ($file === FAlSE) {
+                    return;
+                }
             }
             else {
                 // Nothing to be done, create object using existing url.
@@ -185,20 +266,25 @@ function ams_uploader_node_presave($node) {
             return;
         }
 
-        // For now we are moving all managed files to RTMP dirs.
-        // TODO: create seperate filesystem wrappers for RTMP and HTML urls.
-        $protocolDir = 'applications';
+        if($file){
+            $filename = $file->filename;
+        } else {
+            return;
 
-        $appName = $node->field_authenticated[$node->language][0]['value'] == 0 ? 'vod' : 'unm';
-        $appDir = 'ams://' . $protocolDir . '/' . $appName . '/media';
+        }
         $subDir = empty($node->field_directory[$node->language][0]) ? '' : '/' . $node->field_directory[$node->language][0]['value'];
-        $newpath = $appDir . $subDir;
+        $authenticated = !($node->field_authenticated[$node->language][0]['value'] == 0);
+        $appName = $authenticated ? 'unm' : 'vod';
+        // Returns path to directory file will be placed in.
+        $newpath = get_new_path($appName, $subDir);
+
 
         if (!empty($subDir) && !file_prepare_directory($newpath, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
             throw new Exception('Error saving node: Cannot create new directory.');
         }
+
         //Complete path with filename
-        $newpath = $newpath . '/' . $file->filename;
+        $newpath = $newpath . '/' . $filename;
 
         //Only move file if a new location has been designated
         if ($file->uri != $newpath) {
@@ -208,40 +294,8 @@ function ams_uploader_node_presave($node) {
             }
         }
 
-        //Grab the FQDN of the media stremaing server
-        $result = db_query('SELECT * FROM ams_uploader_admin_vars');
-
-        foreach ($result as $row) {
-            $fqdn = $row->name;
-        }
-
-
-        //Generate rtmp url for file
-
-
-        $subDir = empty($node->field_directory[$node->language][0]) ? '' : $node->field_directory[$node->language][0]['value'];
-        $url = 'rtmp://' . $fqdn . '/' . $appName . '/' . $subDir . '/';
-        $filename = pathinfo($file->filename, PATHINFO_FILENAME);
-        $ext = pathinfo($file->filename, PATHINFO_EXTENSION);
-        //Use extension to determine how to build the rtmp url correctly
-        if ($ext == 'mp4' || $ext == 'f4v') {
-            $amsExt = 'mp4' . ':';
-        }
-        else {
-            if ($ext == 'flv') {
-                $amsExt = '';
-                $ext = '';
-            }
-            else {
-                $amsExt = $ext . ':';
-            }
-        }
-        //Add dot to extension if it exists
-        if (!empty($ext)) {
-            $ext = '.' . $ext;
-        }
         //Set rtmp url to text field
-        $node->field_media_url[$node->language][0]['value'] = $url . $amsExt . $filename . $ext;
+        $node->field_media_url[$node->language][0]['value'] = generate_url($filename_no_ext, $ext, $subDir, $appName);
 
     }
 }
