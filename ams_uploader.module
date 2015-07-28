@@ -15,6 +15,8 @@ include_once dirname(__FILE__) . '/ams_uploader_functions.inc';
 // TODO: Disable url field on managed files.
 // TODO: New categories automatically create pages with all items assigned to that category.
 // TODO: Attach managed media to media upload form (after submission of verified local URL)
+// TODO: What to do when a URL is entered as well as a subdir?
+// TODO: Delete Node, Delete File?
 
 
 function ams_uploader_menu() {
@@ -141,16 +143,18 @@ function ams_uploader_node_presave($node) {
     global $user;
     if ($node->type == 'media') {
 
-
+        $url_was_submitted = false;
+        $url = "";
         // Media was uploaded or media already managed.
         if(isset($node->field_media_upload[$node->language][0]['fid']) && !empty($node->field_media_upload[$node->language][0]['fid'])) {
             $fid = $node->field_media_upload[$node->language][0]['fid'];
             $file = file_load($fid);
             list($filename_no_ext, $ext) = get_filename_and_extension($file->uri);
+            $url_was_submitted = false;
         // New node, entered URL.
         } else if (isset($node->field_media_url[$node->language][0]['value'])) {
             $url = $node->field_media_url[$node->language][0]['value'];
-
+            $url_was_submitted = true;
             $is_local_uri = get_local_path_or_false($url);
 
             if($is_local_uri) {
@@ -198,10 +202,18 @@ function ams_uploader_node_presave($node) {
 
         }
 
-
-        $subDir = empty($node->field_directory[$node->language][0]) ? '' : $node->field_directory[$node->language][0]['value'];
         $authenticated = !($node->field_authenticated[$node->language][0]['value'] == 0);
         $appName = $authenticated ? 'unm' : 'vod';
+        // Get $subDir
+        if($url_was_submitted) {
+            $subDir = get_str_between($url, $appName, $filename);
+            $node->field_directory[$node->language][0]['value'] = $subDir;
+        }
+        else {
+            $subDir = empty($node->field_directory[$node->language][0]) ? '' : $node->field_directory[$node->language][0]['value'];
+        }
+
+
         // Returns path to directory file will be placed in.
         $newpath = get_new_path($appName, $subDir);
 

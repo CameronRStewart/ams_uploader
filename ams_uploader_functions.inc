@@ -13,7 +13,7 @@ function is_rtmp($media_url) {
     return (strpos($media_url, 'rtmp') === 0);
 }
 
-function remove_str_between($delimiter1, $delimiter2, $uri) {
+function get_str_between($uri, $delimiter1, $delimiter2) {
 
     /**
      * This function will take a string like rtmp://libmedia.unm.edu/vod/mp4:test3.f4v,
@@ -21,14 +21,25 @@ function remove_str_between($delimiter1, $delimiter2, $uri) {
      */
 
     $slice_front = strpos($uri, $delimiter1);
+    $length_front = strlen($delimiter1);
     $slice_back = strpos($uri, $delimiter2);
+
 
     if($slice_front === false || $slice_back === false) {
         return $uri;
     }
     else {
-        $remove_str = substr($uri, $slice_front, ($slice_back + strlen($delimiter2)) - $slice_front);
-        return str_replace($remove_str, '/', $uri);
+        $index = $slice_front + $length_front;
+        $length = $slice_back - $index;
+        $remove_str = substr($uri, $index, $length);
+        // Remove '/' from front and back if they are there.
+        if($remove_str[0] == '/'){
+            $remove_str = substr($remove_str, 1);
+        }
+        if($remove_str[strlen($remove_str) - 1] == '/'){
+            $remove_str = substr($remove_str, 0, -1);
+        }
+        return $remove_str;
     }
 }
 
