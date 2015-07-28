@@ -107,9 +107,6 @@ function ams_uploader_media_node_form_validate($form, &$form_state){
         form_set_error('field_media_upload', t("You must either upload a media file OR enter a valid media url."));
         form_set_error('field_media_url');
     }
-    if ($has_value_upload && $has_value_url){
-        form_set_error('field_media_url', t('You may ONLY have EITHER a media file uploaded OR a media url.'));
-    }
     if($has_value_url && !(is_http($media_url) || is_rtmp($media_url))){
         form_set_error('field_media_url', t('You have entered an invalid media URL.  It must start with http, https, or rtmp.'));
     }
@@ -212,7 +209,7 @@ function get_new_path($appName, $subDir) {
 
     $protocolDir = 'applications';
     $appDir = 'ams://' . $protocolDir . '/' . $appName . '/media';
-    $newpath = $appDir . $subDir;
+    $newpath = $appDir . '/' . $subDir;
 
     return $newpath;
 
@@ -339,7 +336,7 @@ function ams_uploader_node_presave($node) {
         }
 
 
-        $subDir = empty($node->field_directory[$node->language][0]) ? '' : '/' . $node->field_directory[$node->language][0]['value'];
+        $subDir = empty($node->field_directory[$node->language][0]) ? '' : $node->field_directory[$node->language][0]['value'];
         $authenticated = !($node->field_authenticated[$node->language][0]['value'] == 0);
         $appName = $authenticated ? 'unm' : 'vod';
         // Returns path to directory file will be placed in.
