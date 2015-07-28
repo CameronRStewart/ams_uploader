@@ -6,16 +6,11 @@
 
 include_once dirname(__FILE__) . '/ams_uploader_functions.inc';
 
-// TODO: adding http url works, but toggling authenticated doesnt seem to work.
 // TODO: Test adding/removing subdirectory
 // TODO: Fix 'stream_cast is not implemented' warning.
 // TODO: Add admin menu options to add one or many local server names (to test locality of files)
 // TODO: Add admin menu options to add 'applications dirs' for RTMP and HTML streams.
-// TODO: javascript to disable url box upon submission of new file (vice versa would be nice too).
-// TODO: Disable url field on managed files.
 // TODO: New categories automatically create pages with all items assigned to that category.
-// TODO: Attach managed media to media upload form (after submission of verified local URL)
-// TODO: What to do when a URL is entered as well as a subdir?
 // TODO: Delete Node, Delete File?
 
 
@@ -111,8 +106,7 @@ function ams_uploader_form_media_node_form_alter(&$form, &$form_state){
  * @param $form_state
  */
 function ams_uploader_media_node_form_validate($form, &$form_state){
-    // TODO: cant validate upload OR url - they will both exist after file is managed.  Instead, if file is managed - disable url.
-    // TODO: deetect if uri parses to currently managed file.  If so, error and give link to page.
+    // TODO: detect if uri parses to currently managed file.  If so, error and give link to page.
 
     $media_url = $form_state['values']['field_media_url']['und'][0]['value'];
     $media_upload = $form_state['values']['field_media_upload']['und'][0]['fid'];
