@@ -4,6 +4,18 @@
  * A description of what your module does.
  */
 
+
+// TODO: adding http url works, but toggling authenticated doesnt seem to work.
+// TODO: Test adding/removing subdirectory
+// TODO: Fix 'stream_cast is not implemented' warning.
+// TODO: Add admin menu options to add one or many local server names (to test locality of files)
+// TODO: Add admin menu options to add 'applications dirs' for RTMP and HTML streams.
+// TODO: javascript to disable url box upon submission of new file (vice versa would be nice too).
+// TODO: Disable url field on managed files.
+// TODO: New categories automatically create pages with all items assigned to that category.
+// TODO: Attach managed media to media upload form (after submission of verified local URL)
+
+
 function ams_uploader_menu() {
     $items = array();
 
@@ -82,6 +94,8 @@ function ams_uploader_form_media_node_form_alter(&$form, &$form_state){
 }
 
 function ams_uploader_media_node_form_validate($form, &$form_state){
+    // TODO: cant validate upload OR url - they will both exist after file is managed.  Instead, if file is managed - disable url.
+    // TODO: deetect if uri parses to currently managed file.  If so, error and give link to page.
 
     $media_url = $form_state['values']['field_media_url']['und'][0]['value'];
     $media_upload = $form_state['values']['field_media_upload']['und'][0]['fid'];
@@ -113,29 +127,71 @@ function is_rtmp($media_url) {
     return (strpos($media_url, 'rtmp') === 0);
 }
 
+function remove_str_between($delimiter1, $delimiter2, $uri) {
+
+    /**
+     * This function will take a string like rtmp://libmedia.unm.edu/vod/mp4:test3.f4v,
+     * remove the mp4: part and return the rest: rtmp://libmedia.unm.edu/vod/test3.f4v
+     */
+
+    $slice_front = strpos($uri, $delimiter1);
+    $slice_back = strpos($uri, $delimiter2);
+
+    if($slice_front === false || $slice_back === false) {
+        return $uri;
+    }
+    else {
+        $remove_str = substr($uri, $slice_front, ($slice_back + strlen($delimiter2)) - $slice_front);
+        return str_replace($remove_str, '/', $uri);
+    }
+}
+
+function strip_filetype_prefix($string, $delimiter) {
+    $slice = strpos($string, $delimiter);
+
+    if($slice === false){
+        return $string;
+    }
+    else {
+        $remove_str = substr($string, 0, ($slice + strlen($delimiter)));
+        return str_replace($remove_str, '', $string);
+    }
+}
+
 function get_local_path_or_false($media_url) {
 
-    // examples:
-    // mp4: rtmp://libmedia.unm.edu/vod/mp4:test3.f4v
-    // flv: rtmp://libmedia.unm.edu/unm/NavajoFilmThemselves/NavajoFilmThemselves_1-2
-    // flv: http://libmedia.unm.edu/vod/bingaman/A1-05/F02.flv with a bunch of options after the &...
-
-    // Paths we need from these:
-    // ams://applications/vod/media/test3.f4v
-    // ams://applications/unm/media/NavajoFilmThemselves/NavajoFilmThemselves_1-2.flv
-    // ams://webroot/vod/bingaman/A1-05/02.flv
+    /**
+     * When a URL is passed in for saving, we need to check whether that URL can be
+     * parsed and if it points to something on the designated streaming server for this install.
+     * This function parses a url, and tries to load it to make sure this file is both local and exists.
+     *
+     * Examples:
+     *  mp4: rtmp://libmedia.unm.edu/vod/mp4:test3.f4v
+     *  flv: rtmp://libmedia.unm.edu/unm/NavajoFilmThemselves/NavajoFilmThemselves_1-2
+     *  flv: http://libmedia.unm.edu/vod/bingaman/A1-05/F02.flv with a bunch of options after the &...
+     *
+     * Paths we need from these:
+     *  ams://applications/vod/media/test3.f4v
+     *  ams://applications/unm/media/NavajoFilmThemselves/NavajoFilmThemselves_1-2.flv
+     *  ams://webroot/vod/bingaman/A1-05/02.flv
+    **/
 
     // TODO: deal with flv files with no extension
 
-    $parsed_url_path = explode('/', $media_url, 4);
-    $parsed_url_path = $parsed_url_path[3];
+    $parsed_url_path = explode('/', $media_url, 5);
+    $application = $parsed_url_path[3];
+    $path_tail = $parsed_url_path[4];
 
+    // Remove AMS required filetype prefixes.
+    //$path_tail = remove_str_between('/', ':', $path_tail);
+    $path_tail = strip_filetype_prefix($path_tail, ':');
 
     if (is_http($media_url)) {
-        $local_path = 'ams://webroot/' . $parsed_url_path;
+        $local_path = 'ams://webroot/' . $application . '/' . $path_tail;
     }
     else if (is_rtmp($media_url)) {
-        $local_path = 'ams://applications/media' . $parsed_url_path;
+        $local_path = 'ams://applications/' . $application . '/media/' . $path_tail;
+        // appdir/media/subdir
     }
     else {
         return false;
@@ -224,16 +280,22 @@ function ams_uploader_node_presave($node) {
 
     global $user;
     if ($node->type == 'media') {
-        // Media was uploaded, URL not set.  Will be RTMP automatically.
+
+
+        // Media was uploaded or media already managed.
         if(isset($node->field_media_upload[$node->language][0]['fid']) && !empty($node->field_media_upload[$node->language][0]['fid'])) {
             $fid = $node->field_media_upload[$node->language][0]['fid'];
             $file = file_load($fid);
+            list($filename_no_ext, $ext) = get_filename_and_extension($file->uri);
+        // New node, entered URL.
         } else if (isset($node->field_media_url[$node->language][0]['value'])) {
             $url = $node->field_media_url[$node->language][0]['value'];
 
             $is_local_uri = get_local_path_or_false($url);
 
             if($is_local_uri) {
+
+                // Set up Drupal file object and have drupal manage it from now on.
                 list($filename_no_ext, $ext) = get_filename_and_extension($is_local_uri);
                 $filename = $filename_no_ext . '.' . $ext;
                 $file = new stdClass;
@@ -252,12 +314,15 @@ function ams_uploader_node_presave($node) {
                 $id = $file->fid;
                 file_usage_add($file, 'ams_uploader', $type, $id);
 
+                $node->field_media_upload[$node->language][0]['fid'] = $file->fid;
+                $node->field_media_upload[$node->language][0]['display'] = 1;
+
                 if ($file === FAlSE) {
                     return;
                 }
             }
             else {
-                // Nothing to be done, create object using existing url.
+                // Not a local URL, Nothing to be done. Create video node using existing url.
                 return;
             }
 
@@ -272,6 +337,8 @@ function ams_uploader_node_presave($node) {
             return;
 
         }
+
+
         $subDir = empty($node->field_directory[$node->language][0]) ? '' : '/' . $node->field_directory[$node->language][0]['value'];
         $authenticated = !($node->field_authenticated[$node->language][0]['value'] == 0);
         $appName = $authenticated ? 'unm' : 'vod';
