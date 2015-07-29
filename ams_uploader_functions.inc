@@ -42,7 +42,7 @@ function generate_url($basename, $ext, $subDir, $appName) {
     return $new_url;
 }
 
-function get_app_name_path_tail_from_url($url) {
+function get_app_name_and_path_tail_from_url($url) {
     $parsed_url_path = explode('/', $url, 5);
     $app_name = $parsed_url_path[3];
     $path_tail = $parsed_url_path[4];
@@ -91,7 +91,7 @@ function get_local_path_or_false($media_url) {
     //$application = $parsed_url_path[3];
     //$path_tail = $parsed_url_path[4];
 
-    list($application, $path_tail) = get_app_name_path_tail_from_url($media_url);
+    list($application, $path_tail) = get_app_name_and_path_tail_from_url($media_url);
 
     // Remove AMS required filetype prefixes.
     //$path_tail = remove_str_between('/', ':', $path_tail);

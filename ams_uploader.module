@@ -7,7 +7,7 @@
 include_once dirname(__FILE__) . '/ams_uploader_functions.inc';
 
 // TODO: Test adding/removing subdirectory
-// TODO: Fix 'stream_cast is not implemented' warning.
+// TODO: Fix 'stream_cast is not implemented' warning (PHP 5.4, 5.5).
 // TODO: Add admin menu options to add one or many local server names (to test locality of files)
 // TODO: Add admin menu options to add 'applications dirs' for RTMP and HTML streams.
 // TODO: New categories automatically create pages with all items assigned to that category.
@@ -200,9 +200,9 @@ function ams_uploader_node_presave($node) {
         $appName = $authenticated ? 'unm' : 'vod';
         // Get $subDir
         if($url_was_submitted) {
-            list($inferred_old_app_name, $path_tail) = get_app_name_path_tail_from_url($url);
+            list($inferred_original_app_name, $path_tail) = get_app_name_and_path_tail_from_url($url);
             // Make sure that delimiter looks like a directory so it doesnt false positive on us.
-            $delimiter1 = '/' . $inferred_old_app_name . '/';
+            $delimiter1 = '/' . $inferred_original_app_name . '/';
             $subDir = get_str_between($url, $delimiter1, $filename);
             $node->field_directory[$node->language][0]['value'] = $subDir;
         }
@@ -212,7 +212,6 @@ function ams_uploader_node_presave($node) {
 
 
         // Returns path to directory file will be placed in.
-        // TODO: WHen submitting new http url and checking authenticate, newpath comes back like: ams://applications/unm/media/http://localhost/vod/taco/08 Dust Bowl.mp3/08 Dust Bowl.mp3
         $newpath = get_new_path($appName, $subDir);
 
 
