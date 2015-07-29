@@ -200,7 +200,10 @@ function ams_uploader_node_presave($node) {
         $appName = $authenticated ? 'unm' : 'vod';
         // Get $subDir
         if($url_was_submitted) {
-            $subDir = get_str_between($url, $appName, $filename);
+            list($inferred_old_app_name, $path_tail) = get_app_name_path_tail_from_url($url);
+            // Make sure that delimiter looks like a directory so it doesnt false positive on us.
+            $delimiter1 = '/' . $inferred_old_app_name . '/';
+            $subDir = get_str_between($url, $delimiter1, $filename);
             $node->field_directory[$node->language][0]['value'] = $subDir;
         }
         else {
@@ -209,6 +212,7 @@ function ams_uploader_node_presave($node) {
 
 
         // Returns path to directory file will be placed in.
+        // TODO: WHen submitting new http url and checking authenticate, newpath comes back like: ams://applications/unm/media/http://localhost/vod/taco/08 Dust Bowl.mp3/08 Dust Bowl.mp3
         $newpath = get_new_path($appName, $subDir);
 
 
