@@ -7,9 +7,11 @@
             $('input#edit-field-media-url-und-0-value').change(function() {
                 if( $('input#edit-field-media-url-und-0-value').val().length > 0 && $('input[name="field_media_upload[und][0][fid]"]').val() == 0){
                     $('input#edit-field-directory-und-0-value').attr('disabled', true);
+                    $('input#edit-field-directory-und-0-value').css('background-color' , '#DEDEDE');
                 }
                 else {
                     $('input#edit-field-directory-und-0-value').removeAttr("disabled");
+                    $('input#edit-field-directory-und-0-value').css('background-color' , '#FFFFFF');
                 }
             });
 
@@ -23,9 +25,11 @@
     function track_fid_change() {
         if($('input[name="field_media_upload[und][0][fid]"]').val() == 0) {
             $("input#edit-field-media-url-und-0-value").removeAttr('disabled');
+            $("input#edit-field-media-url-und-0-value").css('background-color' , '#FFFFFF');
         }
         else {
             $("input#edit-field-media-url-und-0-value").attr('disabled', true);
+            $("input#edit-field-media-url-und-0-value").css('background-color' , '#DEDEDE');
         }
     };
 
