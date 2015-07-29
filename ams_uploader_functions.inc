@@ -109,7 +109,12 @@ function get_new_path($appName, $subDir) {
 
     $protocolDir = 'applications';
     $appDir = 'ams://' . $protocolDir . '/' . $appName . '/media';
-    $newpath = $appDir . '/' . $subDir;
+    if(!(empty($subDir)) || !($subDir == '')){
+        $newpath = $appDir . '/' . $subDir;
+    }
+    else {
+        $newpath = $appDir;
+    }
 
     return $newpath;
 
