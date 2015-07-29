@@ -107,6 +107,7 @@ function ams_uploader_form_media_node_form_alter(&$form, &$form_state){
  */
 function ams_uploader_media_node_form_validate($form, &$form_state){
     // TODO: detect if uri parses to currently managed file.  If so, error and give link to page.
+    // TODO: validate sub directory field (no leading slashes, etc...).
 
     $media_url = $form_state['values']['field_media_url']['und'][0]['value'];
     $media_upload = $form_state['values']['field_media_upload']['und'][0]['fid'];
@@ -223,6 +224,7 @@ function ams_uploader_node_presave($node) {
         $newpath = $newpath . '/' . $filename;
 
         //Only move file if a new location has been designated
+        // TODO: for some reason when I am copying some files, the url is pointing to filename_0.ext, whereas the file itself doesnt have the _0.
         if ($file->uri != $newpath) {
             $file = file_move($file, $newpath, FILE_EXISTS_RENAME);
             if ($file === FALSE) {

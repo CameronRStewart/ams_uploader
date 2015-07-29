@@ -154,12 +154,15 @@ function get_str_between($uri, $delimiter1, $delimiter2) {
         $index = $slice_front + $length_front;
         $length = $slice_back - $index;
         $remove_str = substr($uri, $index, $length);
-        // Remove '/' from front and back if they are there.
-        if($remove_str[0] == '/'){
-            $remove_str = substr($remove_str, 1);
-        }
-        if($remove_str[strlen($remove_str) - 1] == '/'){
-            $remove_str = substr($remove_str, 0, -1);
+
+        if($remove_str) {
+            // Remove '/' from front and back if they are there.
+            if($remove_str[0] == '/'){
+                $remove_str = substr($remove_str, 1);
+            }
+            if($remove_str[strlen($remove_str) - 1] == '/'){
+                $remove_str = substr($remove_str, 0, -1);
+            }
         }
         return $remove_str;
     }
