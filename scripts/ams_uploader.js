@@ -1,5 +1,5 @@
 (function ($) {
-
+    // TODO: Grey-out of disabled input options is untenable in current form.  Need to apply class on change, and set css in theme to set background-color based on this class.
     Drupal.behaviors.ams_uploader = {
         attach: function (context) {
 
