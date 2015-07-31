@@ -22,7 +22,7 @@ function ams_uploader_admin_form($form, &$form_state) {
 	if(isset($results) && !empty($results) && $count > 0) {
 		foreach ($results as $row) {
 			if(!isset($row->name) || empty($row->name)) {
-				$row->name = "libmedia.unm.edu";
+				$row->name = "localhost";
 			}
 
 
@@ -36,7 +36,7 @@ function ams_uploader_admin_form($form, &$form_state) {
 
 	}
 	else {
-		$name = "libmedia.unm.edu";
+		$name = "localhost";
 		$form['server_name']['name'] = array(
 			'#type' => 'textfield',
 			'#title' => t('FQHN'),

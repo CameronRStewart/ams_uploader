@@ -155,17 +155,23 @@ function get_str_between($uri, $delimiter1, $delimiter2) {
         $length = $slice_back - $index;
         $remove_str = substr($uri, $index, $length);
 
-        if($remove_str) {
-            // Remove '/' from front and back if they are there.
-            if($remove_str[0] == '/'){
-                $remove_str = substr($remove_str, 1);
-            }
-            if($remove_str[strlen($remove_str) - 1] == '/'){
-                $remove_str = substr($remove_str, 0, -1);
-            }
-        }
+        $remove_str = strip_outer_slashes($remove_str);
+
         return $remove_str;
     }
+}
+
+function strip_outer_slashes($string) {
+    if($string) {
+        // Remove '/' from front and back if they are there.
+        if($string[0] == '/'){
+            $string = substr($string, 1);
+        }
+        if($string[strlen($string) - 1] == '/'){
+            $string = substr($string, 0, -1);
+        }
+    }
+    return $string;
 }
 
 function is_http($media_url) {
