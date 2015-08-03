@@ -49,14 +49,47 @@ function ams_uploader_schema() {
 				'not null' => TRUE,
 				'default' => 'rtmp',
 			),
+			'authentication' => array(
+				'description' => t('Whether or not this application directory requires authentication for streaming.'),
+				'type' => 'int',
+				'not null' => TRUE,
+				'default' => 0,
+
+			),
 			'updated' => array(
 				'description' => t('UNIX timestamp of last update.'),
 				'type' => 'int',
 				'not null' => FALSE,
 			),
 		),
+		'primary key' => array('id'),
 	);
 
+    $schema['ams_uploader_ams_root'] = array(
+
+        'description' => t('Simple table to hold the root installation path for AMS'),
+        'fields' => array(
+            'id' => array(
+                'description' => t('The primary ID for install directory field.'),
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'path' => array(
+                'description' => t('The full path to the root of your AMS installation.'),
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '/opt/adobe/ams',
+            ),
+            'updated' => array(
+                'description' => t('UNIX timestamp of last update.'),
+                'type' => 'int',
+                'not null' => FALSE,
+            ),
+        ),
+        'primary key' => array('id'),
+    );
 
 	return $schema;
 }
