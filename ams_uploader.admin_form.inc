@@ -55,7 +55,7 @@ function ams_uploader_admin_form($form, &$form_state) {
         '#title' => t('Enter the full path to your AMS installation root directory.  This should look like /opt/adobe/ams.'),
     );
 
-    if(isset($results2) && !empty($results2) && count == 1) {
+    if(isset($results2) && !empty($results2) && $count == 1) {
         // We only have one base installation directory.
         foreach($results2 as $row) {
             $form['ams_base']['ams_base_dir'] = array (
@@ -65,6 +65,15 @@ function ams_uploader_admin_form($form, &$form_state) {
                 '#default_value' => $row->path,
             );
         }
+    }
+    else if ($count == 0) {
+        // Initialized without any content.
+        $form['ams_base']['ams_base_dir'] = array (
+            '#type' => 'textfield',
+            '#title' => t('Base Install Path'),
+            '#required' => TRUE,
+            '#default_value' => '/opt/adobe/ams',
+        );
     }
     else {
         throw new Exception("Expected 1 entry in the ams_uploader_ams_root query, got " . $count);
@@ -135,6 +144,36 @@ function ams_uploader_admin_form($form, &$form_state) {
 			}
 		}
 	}
+    elseif($count == 0) {
+        //Initialized without content
+        $form['app_dirs']['non_auth']['rtmp_non_auth'] = array(
+            '#type' => 'textfield',
+            '#title' => 'RTMP Non-Authenticated',
+            '#required' => TRUE,
+            '#default_value' => '',
+        );
+        $form['app_dirs']['non_auth']['http_non_auth'] = array(
+            '#type' => 'textfield',
+            '#title' => 'HTTP Non-Authenticated',
+            '#required' => TRUE,
+            '#default_value' => '',
+        );
+        $form['app_dirs']['auth']['rtmp_auth'] = array(
+            '#type' => 'textfield',
+            '#title' => 'RTMP Authenticated',
+            '#required' => TRUE,
+            '#default_value' => '',
+        );
+        $form['app_dirs']['auth']['http_auth'] = array(
+            '#type' => 'textfield',
+            '#title' => 'HTTP Authenticated',
+            '#required' => TRUE,
+            '#default_value' => '',
+        );
+
+
+
+    }
 	else {
 		throw new Exception("Expected 4 entries in the ams_uploader_application_dirs query, got " . $count);
 	}
@@ -195,10 +234,10 @@ function ams_uploader_admin_form_submit($form, &$form_state) {
     }
 
     $exists3 = db_query('SELECT * FROM ams_uploader_application_dirs')->fetchField();
-    $rtmp_non_auth = $form_state['values']['non_auth']['rtmp_non_auth'];
-    $http_non_auth = $form_state['values']['non_auth']['http_non_auth'];
-    $rtmp_auth = $form_state['values']['auth']['rtmp_auth'];
-    $http_auth = $form_state['values']['auth']['http_auth'];
+    $rtmp_non_auth = $form_state['values']['rtmp_non_auth'];
+    $http_non_auth = $form_state['values']['http_non_auth'];
+    $rtmp_auth = $form_state['values']['rtmp_auth'];
+    $http_auth = $form_state['values']['http_auth'];
     if(!$exists3) {
         db_insert('ams_uploader_application_dirs')
             ->fields(array(
@@ -257,7 +296,7 @@ function ams_uploader_admin_form_submit($form, &$form_state) {
                 'protocol' => 'http',
                 'authentication' => 1,
             ))
-            ->execute()
+            ->execute();
     }
 
 
