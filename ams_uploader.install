@@ -35,7 +35,14 @@ function ams_uploader_schema() {
 				'unsigned' => TRUE,
 				'not null' => TRUE,
 			),
-			'name' => array(
+            'title' => array(
+                'description' => t('How we will abstractly refer to this directory object.'),
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+			'dir' => array(
 				'description' => t('the directory name for this application'),
 				'type' => 'varchar',
 				'length' => 255,

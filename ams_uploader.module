@@ -355,6 +355,17 @@ function ams_uploader_stream_wrappers() {
  */
 class AMSStreamWrapper extends DrupalPublicStreamWrapper {
     public function getDirectoryPath() {
-        return '/opt/adobe/ams';
+        $result = db_query('SELECT * FROM ams_uploader_ams_root');
+        $count = $result->rowCount();
+
+        if(isset($result) && !(empty($result)) && $count == 1){
+            foreach ($result as $row) {
+                $path = $row->path;
+            }
+        }
+        else {
+            throw new Exception("AMSStreamWrapper: Trying to map to ams installation root.  DB query returned " . $count . " rows, expected 1.");
+        }
+        return $path;
     }
 }

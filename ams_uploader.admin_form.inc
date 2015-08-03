@@ -102,41 +102,41 @@ function ams_uploader_admin_form($form, &$form_state) {
 	if(isset($results3) && !empty($results3) && $count == 4) {
 		// This is the currently acceptable situation.
 		foreach ($results3 as $row) {
-			if($row->authentication == 0 && $row->protocol == 'rtmp') {
+			if($row->title == 'rtmp_non_auth') {
 				// Non Authenticated RTMP
 				$form['app_dirs']['non_auth']['rtmp_non_auth'] = array(
 					'#type' => 'textfield',
 					'#title' => 'RTMP Non-Authenticated',
 					'#required' => TRUE,
-					'#default_value' => $row->name,
+					'#default_value' => $row->dir,
 				);
 			}
-			else if($row->authentication == 0 && $row->protocol == 'http') {
+			else if($row->title == 'http_non_auth') {
 				// Non Authenticated HTTP
 				$form['app_dirs']['non_auth']['http_non_auth'] = array(
 					'#type' => 'textfield',
 					'#title' => 'HTTP Non-Authenticated',
 					'#required' => TRUE,
-					'#default_value' => $row->name,
+					'#default_value' => $row->dir,
 				);
 			}
-			else if($row->authentication == 1 && $row->protocol == 'rtmp') {
+			else if($row->title == 'rtmp_auth') {
 				// Authenticated RTMP
 				$form['app_dirs']['auth']['rtmp_auth'] = array(
 					'#type' => 'textfield',
 					'#title' => 'RTMP Authenticated',
 					'#required' => TRUE,
-					'#default_value' => $row->name,
+					'#default_value' => $row->dir,
 				);
 			}
 			// TODO: Implement authenticated http stream handling.
-			else if($row->authentication == 1 && $row->protocol == 'http') {
+			else if($row->title == 'http_auth') {
 				// Authenticated HTTP - not technically supported yet.
 				$form['app_dirs']['auth']['http_auth'] = array(
 					'#type' => 'textfield',
 					'#title' => 'HTTP Authenticated',
-					'#required' => TRUE,
-					'#default_value' => $row->name,
+					'#required' => FALSE,
+					'#default_value' => $row->dir,
 				);
 			}
 			else {
@@ -167,7 +167,7 @@ function ams_uploader_admin_form($form, &$form_state) {
         $form['app_dirs']['auth']['http_auth'] = array(
             '#type' => 'textfield',
             '#title' => 'HTTP Authenticated',
-            '#required' => TRUE,
+            '#required' => FALSE,
             '#default_value' => '',
         );
 
@@ -241,28 +241,32 @@ function ams_uploader_admin_form_submit($form, &$form_state) {
     if(!$exists3) {
         db_insert('ams_uploader_application_dirs')
             ->fields(array(
-                'name' => $rtmp_non_auth,
+                'title' => 'rtmp_non_auth',
+                'dir' => $rtmp_non_auth,
                 'protocol' => 'rtmp',
                 'authentication' => 0,
             ))
             ->execute();
         db_insert('ams_uploader_application_dirs')
             ->fields(array(
-                'name' => $http_non_auth,
+                'title' => 'http_non_auth',
+                'dir' => $http_non_auth,
                 'protocol' => 'http',
                 'authentication' => 0,
             ))
             ->execute();
         db_insert('ams_uploader_application_dirs')
             ->fields(array(
-                'name' => $rtmp_auth,
+                'title' => 'rtmp_auth',
+                'dir' => $rtmp_auth,
                 'protocol' => 'rtmp',
                 'authentication' => 1,
             ))
             ->execute();
         db_insert('ams_uploader_application_dirs')
             ->fields(array(
-                'name' => $http_auth,
+                'title' => 'http_auth',
+                'dir' => $http_auth,
                 'protocol' => 'http',
                 'authentication' => 1,
             ))
@@ -271,31 +275,39 @@ function ams_uploader_admin_form_submit($form, &$form_state) {
     else {
         db_update('ams_uploader_application_dirs')
             ->fields(array(
-                'name' => $rtmp_non_auth,
+                'title' => 'rtmp_non_auth',
+                'dir' => $rtmp_non_auth,
                 'protocol' => 'rtmp',
                 'authentication' => 0,
             ))
+            ->condition('title', 'rtmp_non_auth', '=')
             ->execute();
         db_update('ams_uploader_application_dirs')
             ->fields(array(
-                'name' => $http_non_auth,
+                'title' => 'http_non_auth',
+                'dir' => $http_non_auth,
                 'protocol' => 'http',
                 'authentication' => 0,
             ))
+            ->condition('title', 'http_non_auth', '=')
             ->execute();
         db_update('ams_uploader_application_dirs')
             ->fields(array(
-                'name' => $rtmp_auth,
+                'title' => 'rtmp_auth',
+                'dir' => $rtmp_auth,
                 'protocol' => 'rtmp',
                 'authentication' => 1,
             ))
+            ->condition('title', 'rtmp_auth', '=')
             ->execute();
         db_update('ams_uploader_application_dirs')
             ->fields(array(
-                'name' => $http_auth,
+                'title' => 'http_auth',
+                'dir' => $http_auth,
                 'protocol' => 'http',
                 'authentication' => 1,
             ))
+            ->condition('title', 'http_auth', '=')
             ->execute();
     }
 
