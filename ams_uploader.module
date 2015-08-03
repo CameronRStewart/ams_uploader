@@ -6,12 +6,11 @@
 
 include_once dirname(__FILE__) . '/ams_uploader_functions.inc';
 
-// TODO: Test adding/removing subdirectory
 // TODO: Fix 'stream_cast is not implemented' warning (PHP 5.4, 5.5).
 // TODO: Add admin menu options to add one or many local server names (to test locality of files)
-// TODO: Add admin menu options to add 'applications dirs' for RTMP and HTML streams.
 // TODO: New categories automatically create pages with all items assigned to that category.
 // TODO: Delete Node, Delete File?
+// TODO: Implement 'Do Not Manage' checkbox.
 
 
 function ams_uploader_menu() {
@@ -107,7 +106,6 @@ function ams_uploader_form_media_node_form_alter(&$form, &$form_state){
  */
 function ams_uploader_media_node_form_validate($form, &$form_state){
     // TODO: detect if uri parses to currently managed file.  If so, error and give link to page.
-    // TODO: validate sub directory field (no leading slashes, etc...).
 
     $media_url = $form_state['values']['field_media_url']['und'][0]['value'];
     $media_upload = $form_state['values']['field_media_upload']['und'][0]['fid'];
@@ -136,6 +134,37 @@ function ams_uploader_media_node_form_validate($form, &$form_state){
 function ams_uploader_node_presave($node) {
 
     global $user;
+    $ams_uploader_application_dir_rtmp_non_auth = '';
+    $ams_uploader_application_dir_http_non_auth = '';
+    $ams_uploader_application_dir_rtmp_auth = '';
+    $ams_uploader_application_dir_http_auth = '';
+
+    $results = db_query('SELECT * FROM ams_uploader_application_dirs');
+
+    $count = $results->rowCount();
+
+    if(isset($results) && !(empty($results)) && $count == 4) {
+        foreach($results as $row){
+            if($row->title == 'rtmp_non_auth') {
+                $ams_uploader_application_dir_rtmp_non_auth = $row->dir;
+            }
+            elseif($row->title == 'http_non_auth') {
+                $ams_uploader_application_dir_http_non_auth = $row->dir;
+            }
+            elseif($row->title == 'rtmp_auth') {
+                $ams_uploader_application_dir_rtmp_auth = $row->dir;
+            }
+            elseif($row->title == 'http_auth') {
+                $ams_uploader_application_dir_http_auth = $row->dir;
+            }
+            else {
+                throw new Exception("Bad value from the ams_uploader_application_dirs table.");
+            }
+        }
+    }
+
+
+
     if ($node->type == 'media') {
 
         $url_was_submitted = false;
@@ -197,10 +226,12 @@ function ams_uploader_node_presave($node) {
 
         }
 
+
         $authenticated = !($node->field_authenticated[$node->language][0]['value'] == 0);
-        $appName = $authenticated ? 'unm' : 'vod';
+        $appName = $authenticated ? $ams_uploader_application_dir_rtmp_auth : $ams_uploader_application_dir_rtmp_non_auth;
         // Get $subDir
         if($url_was_submitted) {
+            // If the URL was submitted, we will infer the subdirectory structure from the URL itself.
             list($inferred_original_app_name, $path_tail) = get_app_name_and_path_tail_from_url($url);
             // Make sure that delimiter looks like a directory so it doesnt false positive on us.
             $delimiter1 = '/' . $inferred_original_app_name . '/';
@@ -208,7 +239,11 @@ function ams_uploader_node_presave($node) {
             $node->field_directory[$node->language][0]['value'] = $subDir;
         }
         else {
+            // If a media upload was processed, or this is an edit of a currently managed file,
+            // the user is free to enter their own preferred sub directory structure.  We will also
+            // attempt to clean up any undesired slashes to keep things formatted like we want them.
             $subDir = empty($node->field_directory[$node->language][0]) ? '' : $node->field_directory[$node->language][0]['value'];
+            $subDir = strip_outer_slashes($subDir);
         }
 
 
@@ -224,11 +259,11 @@ function ams_uploader_node_presave($node) {
         $newpath = $newpath . '/' . $filename;
 
         //Only move file if a new location has been designated
-        // TODO: for some reason when I am copying some files, the url is pointing to filename_0.ext, whereas the file itself doesnt have the _0.
         if ($file->uri != $newpath) {
-            $file = file_move($file, $newpath, FILE_EXISTS_RENAME);
+            $file = file_move($file, $newpath, FILE_EXISTS_ERROR);
+            // TODO: deal with file-copy collisions more elegantly.  Currently errors and dies.  Would like error and continue.
             if ($file === FALSE) {
-                throw new Exception('Could not copy file to ' . $newpath . '. Check permissions.');
+                throw new Exception('Could not copy file to ' . $newpath . '. Make sure the file doesnt already exist, or check permissions.');
             }
         }
 
@@ -351,6 +386,17 @@ function ams_uploader_stream_wrappers() {
  */
 class AMSStreamWrapper extends DrupalPublicStreamWrapper {
     public function getDirectoryPath() {
-        return '/opt/adobe/ams';
+        $result = db_query('SELECT * FROM ams_uploader_ams_root');
+        $count = $result->rowCount();
+
+        if(isset($result) && !(empty($result)) && $count == 1){
+            foreach ($result as $row) {
+                $path = $row->path;
+            }
+        }
+        else {
+            throw new Exception("AMSStreamWrapper: Trying to map to ams installation root.  DB query returned " . $count . " rows, expected 1.");
+        }
+        return $path;
     }
 }

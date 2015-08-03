@@ -26,5 +26,77 @@ function ams_uploader_schema() {
 			),
 			'primary key' => array('id'),
 		);
+	$schema['ams_uploader_application_dirs'] = array(
+		'description' => t('Table to hold various possible ams application directory names.'),
+		'fields' => array(
+			'id' => array(
+				'description' => t('The primary ID for the application dir field'),
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+            'title' => array(
+                'description' => t('How we will abstractly refer to this directory object.'),
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+			'dir' => array(
+				'description' => t('the directory name for this application'),
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+				'default' => 'vod',
+			),
+			'protocol' => array(
+				'description' => t('the protocol that this dir belongs to (rtmp and http currently supported).'),
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+				'default' => 'rtmp',
+			),
+			'authentication' => array(
+				'description' => t('Whether or not this application directory requires authentication for streaming.'),
+				'type' => 'int',
+				'not null' => TRUE,
+				'default' => 0,
+
+			),
+			'updated' => array(
+				'description' => t('UNIX timestamp of last update.'),
+				'type' => 'int',
+				'not null' => FALSE,
+			),
+		),
+		'primary key' => array('id'),
+	);
+
+    $schema['ams_uploader_ams_root'] = array(
+
+        'description' => t('Simple table to hold the root installation path for AMS'),
+        'fields' => array(
+            'id' => array(
+                'description' => t('The primary ID for install directory field.'),
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'path' => array(
+                'description' => t('The full path to the root of your AMS installation.'),
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '/opt/adobe/ams',
+            ),
+            'updated' => array(
+                'description' => t('UNIX timestamp of last update.'),
+                'type' => 'int',
+                'not null' => FALSE,
+            ),
+        ),
+        'primary key' => array('id'),
+    );
+
 	return $schema;
 }
