@@ -10,6 +10,7 @@ include_once dirname(__FILE__) . '/ams_uploader_functions.inc';
 // TODO: New categories automatically create pages with all items assigned to that category.
 // TODO: Delete Node, Delete File?
 // TODO: Implement 'Do Not Manage' checkbox.
+// TODO: When a video source is not local, users shouldnt have the option to change sub-dir or authenticate.
 
 
 function ams_uploader_menu() {
