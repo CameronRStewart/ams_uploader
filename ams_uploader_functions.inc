@@ -5,12 +5,8 @@
  */
 
 function generate_url($basename, $ext, $subDir, $appName) {
-    //Grab the FQDN of the media stremaing server
-    $result = db_query('SELECT * FROM ams_uploader_admin_vars');
 
-    foreach ($result as $row) {
-        $fqdn = $row->name;
-    }
+    $fqdn = get_hostname();
 
 
     //Generate rtmp url for file
@@ -67,6 +63,28 @@ function get_filename_and_extension($uri) {
 
 }
 
+function get_hostname() {
+
+    //Grab the FQDN of the media stremaing server
+    $result = db_query('SELECT * FROM ams_uploader_admin_vars');
+
+    $count = $result->rowCount();
+
+    $fqdn = '';
+
+    if(isset($result) && !(empty($result)) && $count == 1) {
+        foreach ($result as $row) {
+            $fqdn = $row->name;
+        }
+    }
+    else {
+        throw new Exception("get_hostname: FQDN query yeilded " . $count . " values, expected 1.");
+    }
+
+    return $fqdn;
+
+}
+
 function get_local_path_or_false($media_url) {
 
     /**
@@ -98,17 +116,24 @@ function get_local_path_or_false($media_url) {
     $path_tail = strip_filetype_prefix($path_tail, ':');
 
     if (is_http($media_url)) {
-        $local_path = 'ams://webroot/' . $application . '/' . $path_tail;
+        $new_path_tail = '/' . $application . '/' . $path_tail;
+        $local_path = 'ams://webroot' . $new_path_tail;
+        $pre_replace_to_get_hostname_from_user_entered_url = 'http://';
+        $post_replace_to_get_hostname_from_user_entered_url = $new_path_tail;
     }
     else if (is_rtmp($media_url)) {
         $local_path = 'ams://applications/' . $application . '/media/' . $path_tail;
-        // appdir/media/subdir
+        $pre_replace_to_get_hostname_from_user_entered_url = 'rtmp://';
+        $replace_to_get_hostname_from_user_entered_url = '/' . $application . '/' . $path_tail;
     }
     else {
         return false;
     }
 
-    if(file_exists($local_path)) {
+    $hostname_from_url = str_replace($pre_replace_to_get_hostname_from_user_entered_url, '', $media_url);
+    $hostname_from_url = str_replace($post_replace_to_get_hostname_from_user_entered_url, '', $hostname_from_url);
+    $actual_hostname = get_hostname();
+    if(file_exists($local_path) && ($hostname_from_url == $actual_hostname)) {
         return $local_path;
     }
     else {

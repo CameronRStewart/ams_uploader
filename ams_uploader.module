@@ -7,7 +7,6 @@
 include_once dirname(__FILE__) . '/ams_uploader_functions.inc';
 
 // TODO: Fix 'stream_cast is not implemented' warning (PHP 5.4, 5.5).
-// TODO: Add admin menu options to add one or many local server names (to test locality of files)
 // TODO: New categories automatically create pages with all items assigned to that category.
 // TODO: Delete Node, Delete File?
 // TODO: Implement 'Do Not Manage' checkbox.
