@@ -211,6 +211,10 @@ function ams_uploader_node_presave($node) {
             }
             else {
                 // Not a local URL, Nothing to be done. Create video node using existing url.
+                //Set rtmp url to text field
+                $width = '640';
+                $height = '480';
+                $node->field_embed_code[$node->language][0]['value'] = get_object_code($height, $width, $url);
                 return;
             }
 
@@ -268,7 +272,11 @@ function ams_uploader_node_presave($node) {
         }
 
         //Set rtmp url to text field
-        $node->field_media_url[$node->language][0]['value'] = generate_url($filename_no_ext, $ext, $subDir, $appName);
+        $width = '640';
+        $height = '480';
+        $stream_url = generate_url($filename_no_ext, $ext, $subDir, $appName);
+        $node->field_media_url[$node->language][0]['value'] = $stream_url;
+        $node->field_embed_code[$node->language][0]['value'] = get_object_code($height, $width, $stream_url);
 
     }
 }
@@ -280,7 +288,7 @@ function ams_uploader_field_formatter_info() {
     return array(
         'ams_formatter' => array(
             'label' => 'AMS Player',
-            'description' => 'Flash player to embed videos/audo from Adobe Media Server',
+            'description' => 'Flash player to embed videos/audio from Adobe Media Server',
             'field types' => array('text'),
             'settings' => array( //Array of the settings we'll create
                 'video_width' => '640', //default value for width
@@ -334,28 +342,16 @@ function ams_uploader_field_formatter_settings_summary($field, $instance, $view_
  */
 function ams_uploader_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
     $element = array(); // Initialize the var
-    $mod_path = drupal_get_path('module', 'ams_uploader');
     $settings = $display['settings']; // get the settings
     $width = $settings['video_width'];
     $height = $settings['video_height'];
 
-    $player = base_path() . $mod_path . '/swfs/StrobeMediaPlayback.swf';
 
     // Create the object code
     foreach ($items as $delta => $item) {
         $url = $item['safe_value']; // Getting the actual value
         //Generate object code with player and url embedded
-        $embedCode = '
-    <object type="application/x-shockwave-flash" data="' . $player . '"
-      width="' . $width . '" height="' . $height . '">
-      <param name="quality" value="high">
-      <param name="bgcolor" value="#000000">
-      <param name="allowscriptaccess" value="sameDomain">
-      <param name="allowfullscreen" value="true">
-      <param name="wmode" value="direct">
-      <param name="flashvars" value="src=' . $url . '">
-    </object>
-    ';
+        $embedCode = get_object_code($height, $width, $url);
     }
     if (isset($embedCode)) {
         $element[0]['#markup'] = $embedCode; // Assign it to the #markup of the element

@@ -124,7 +124,7 @@ function get_local_path_or_false($media_url) {
     else if (is_rtmp($media_url)) {
         $local_path = 'ams://applications/' . $application . '/media/' . $path_tail;
         $pre_replace_to_get_hostname_from_user_entered_url = 'rtmp://';
-        $replace_to_get_hostname_from_user_entered_url = '/' . $application . '/' . $path_tail;
+        $post_replace_to_get_hostname_from_user_entered_url = '/' . $application . '/' . $path_tail;
     }
     else {
         return false;
@@ -158,6 +158,33 @@ function get_new_path($appName, $subDir) {
 
 
 
+}
+
+function get_object_code($height, $width, $url) {
+    $mod_path = drupal_get_path('module', 'ams_uploader');
+    //$player = base_path() . $mod_path . '/swfs/StrobeMediaPlayback.swf';
+    $results = db_query('SELECT * FROM ams_uploader_media_player');
+    $count = $results->rowCount();
+
+    if (isset($results) && !empty($results) && $count > 0) {
+        foreach ($results as $row) {
+            $player = $row->player_uri;
+        }
+    }
+
+    $embedCode = '
+    <object type="application/x-shockwave-flash" data="' . $player . '"
+      width="' . $width . '" height="' . $height . '">
+      <param name="quality" value="high">
+      <param name="bgcolor" value="#000000">
+      <param name="allowscriptaccess" value="sameDomain">
+      <param name="allowfullscreen" value="true">
+      <param name="wmode" value="direct">
+      <param name="flashvars" value="src=' . $url . '">
+    </object>
+    ';
+
+    return $embedCode;
 }
 
 function get_str_between($uri, $delimiter1, $delimiter2) {

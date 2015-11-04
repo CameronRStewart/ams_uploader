@@ -3,6 +3,10 @@
 function ams_uploader_admin_form($form, &$form_state) {
 	$form = array();
 
+
+    /**
+     * Default Streaming Server Name
+     */
 	$form['server_name'] = array(
 		'#type' => 'fieldset',
 		'#title' => t('Enter the servername of the streaming media server.  This should look like xxx.unm.edu.'),
@@ -46,18 +50,22 @@ function ams_uploader_admin_form($form, &$form_state) {
 	}
 
 
-    $results2 = db_query('SELECT * FROM ams_uploader_ams_root');
+    /**
+     * AMS Base Install Directory
+     */
 
-    $count = $results2->rowCount();
+    $results = db_query('SELECT * FROM ams_uploader_ams_root');
+
+    $count = $results->rowCount();
 
     $form['ams_base'] = array(
         '#type' => 'fieldset',
         '#title' => t('Enter the full path to your AMS installation root directory.  This should look like /opt/adobe/ams.'),
     );
 
-    if(isset($results2) && !empty($results2) && $count == 1) {
+    if(isset($results) && !empty($results) && $count == 1) {
         // We only have one base installation directory.
-        foreach($results2 as $row) {
+        foreach($results as $row) {
             $form['ams_base']['ams_base_dir'] = array (
                 '#type' => 'textfield',
                 '#title' => t('Base Install Path'),
@@ -79,9 +87,42 @@ function ams_uploader_admin_form($form, &$form_state) {
         throw new Exception("Expected 1 entry in the ams_uploader_ams_root query, got " . $count);
     }
 
-	$results3 = db_query('SELECT * FROM ams_uploader_application_dirs');
+    /**
+     * Media Player URI
+     */
+    $results = db_query('SELECT * FROM ams_uploader_media_player');
+    $count = $results->rowCount();
 
-	$count = $results3->rowCount();
+    $form['media_player_uri'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Enter Media Player URI'),
+    );
+
+    if (isset($results) && !empty($results) && $count > 0) {
+        foreach ($results as $row){
+            $form['media_player_uri']['player_uri'] = array(
+                '#type' => 'textfield',
+                '#title' => t('Uri'),
+                '#required' => TRUE,
+                '#default_value' => $row->player_uri,
+            );
+        }
+    } else {
+        $media_player_uri = 'https://fpdownload.adobe.com/strobe/FlashMediaPlayback_101.swf';
+        $form['media_player_uri']['player_uri'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Uri'),
+            '#required' => TRUE,
+            '#default_value' => $media_player_uri,
+        );
+    }
+
+    /**
+     * Application Directories
+     */
+	$results = db_query('SELECT * FROM ams_uploader_application_dirs');
+
+	$count = $results->rowCount();
 
 	$form['app_dirs'] = array(
 		'#type' => 'fieldset',
@@ -99,9 +140,9 @@ function ams_uploader_admin_form($form, &$form_state) {
 
 	// TODO: allow for more than one application for each auth'd and non-auth'd.
 	// TODO: allow for auth'd http application dirs.
-	if(isset($results3) && !empty($results3) && $count == 4) {
+	if(isset($results) && !empty($results) && $count == 4) {
 		// This is the currently acceptable situation.
-		foreach ($results3 as $row) {
+		foreach ($results as $row) {
 			if($row->title == 'rtmp_non_auth') {
 				// Non Authenticated RTMP
 				$form['app_dirs']['non_auth']['rtmp_non_auth'] = array(
@@ -178,6 +219,8 @@ function ams_uploader_admin_form($form, &$form_state) {
 		throw new Exception("Expected 4 entries in the ams_uploader_application_dirs query, got " . $count);
 	}
 
+
+
 	$form['submit'] = array(
 		'#type' => 'submit',
 		'#value' => t('Save'),
@@ -196,6 +239,12 @@ function ams_uploader_admin_form_validate($form, &$form_state) {
 }
 
 function ams_uploader_admin_form_submit($form, &$form_state) {
+
+
+    /**
+     * Default Streaming Server Name
+     */
+
 	$saved_fqdn = $form_state['values']['name'];
 
 	$exists = db_query('SELECT * FROM ams_uploader_admin_vars')->fetchField();
@@ -215,10 +264,12 @@ function ams_uploader_admin_form_submit($form, &$form_state) {
 		->execute();
 	}
 
-
-    $exists2 = db_query('SELECT * FROM ams_uploader_ams_root')->fetchField();
+    /**
+     * AMS Base Install Path
+     */
+    $exists = db_query('SELECT * FROM ams_uploader_ams_root')->fetchField();
     $saved_base_path = $form_state['values']['ams_base_dir'];
-    if(!$exists2) {
+    if(!$exists) {
         db_insert('ams_uploader_ams_root')
             ->fields(array(
                 'path' => $saved_base_path,
@@ -233,12 +284,35 @@ function ams_uploader_admin_form_submit($form, &$form_state) {
             ->execute();
     }
 
-    $exists3 = db_query('SELECT * FROM ams_uploader_application_dirs')->fetchField();
+    /**
+     * Default Media Player URI
+     */
+    $exists = db_query('SELECT * FROM ams_uploader_media_player')->fetchField();
+    $saved_media_player_uri = $form_state['values']['player_uri'];
+    if(!$exists) {
+        db_insert('ams_uploader_media_player')
+            ->fields(array(
+                'player_uri' => $saved_media_player_uri,
+            ))
+            ->execute();
+    }
+    else {
+        db_update('ams_uploader_media_player')
+            ->fields(array(
+                'player_uri' => $saved_media_player_uri,
+            ))
+            ->execute();
+    }
+
+    /**
+     * AMS Application Directories
+     */
+    $exists = db_query('SELECT * FROM ams_uploader_application_dirs')->fetchField();
     $rtmp_non_auth = $form_state['values']['rtmp_non_auth'];
     $http_non_auth = $form_state['values']['http_non_auth'];
     $rtmp_auth = $form_state['values']['rtmp_auth'];
     $http_auth = $form_state['values']['http_auth'];
-    if(!$exists3) {
+    if(!$exists) {
         db_insert('ams_uploader_application_dirs')
             ->fields(array(
                 'title' => 'rtmp_non_auth',

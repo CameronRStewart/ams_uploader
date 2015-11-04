@@ -196,7 +196,7 @@ function ams_uploader_content_type_field_default_field_instances() {
     'settings' => array(
       'description_field' => 0,
       'file_directory' => '',
-      'file_extensions' => 'flv avi mp4 m4v f4v 3gpp mp3',
+      'file_extensions' => 'flv avi mp4 f4v 3gpp mp3',
       'max_filesize' => '',
       'mediafront' => array(
         'custom' => '',
