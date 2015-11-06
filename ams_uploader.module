@@ -143,6 +143,7 @@ function ams_uploader_node_presave($node) {
 
     $count = $results->rowCount();
 
+    // Get application directory that this will be put into (e.g. default AMS is 'vod')
     if(isset($results) && !(empty($results)) && $count == 4) {
         foreach($results as $row){
             if($row->title == 'rtmp_non_auth') {
@@ -169,18 +170,20 @@ function ams_uploader_node_presave($node) {
 
         $url_was_submitted = false;
         $url = "";
+
         // Media was uploaded or media already managed.
         if(isset($node->field_media_upload[$node->language][0]['fid']) && !empty($node->field_media_upload[$node->language][0]['fid'])) {
             $fid = $node->field_media_upload[$node->language][0]['fid'];
             $file = file_load($fid);
             list($filename_no_ext, $ext) = get_filename_and_extension($file->uri);
             $url_was_submitted = false;
-        // New node, entered URL.
+        // New node, user submitted URL (instead of uploading media).
         } else if (isset($node->field_media_url[$node->language][0]['value'])) {
             $url = $node->field_media_url[$node->language][0]['value'];
             $url_was_submitted = true;
             $is_local_uri = get_local_path_or_false($url);
 
+            // This URI points to a local, existing file.
             if($is_local_uri) {
 
                 // Set up Drupal file object and have drupal manage it from now on.
@@ -210,6 +213,7 @@ function ams_uploader_node_presave($node) {
                 }
             }
             else {
+                // TODO: non local URL's shouldnt be changed.  When my default streaming media URI is set to localhost, but a video has recieved a URI from elsewhere, it shouldnt change it.
                 // Not a local URL, Nothing to be done. Create video node using existing url.
                 //Set rtmp url to text field
                 $width = '640';
@@ -231,6 +235,7 @@ function ams_uploader_node_presave($node) {
         }
 
 
+        // Unless this is a non-local URI (or there was an error), we will recalculate the URI for this stream.
         $authenticated = !($node->field_authenticated[$node->language][0]['value'] == 0);
         $appName = $authenticated ? $ams_uploader_application_dir_rtmp_auth : $ams_uploader_application_dir_rtmp_non_auth;
         // Get $subDir

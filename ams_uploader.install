@@ -41,7 +41,7 @@ function ams_uploader_schema() {
 				'type' => 'varchar',
 				'length' => 255,
 				'not null' => TRUE,
-				'default' => ''
+				'default' => 'https://fpdownload.adobe.com/strobe/FlashMediaPlayback_101.swf'
 			),
 			'updated' => array(
 				'description' => t('UNIX timestamp of last update.'),

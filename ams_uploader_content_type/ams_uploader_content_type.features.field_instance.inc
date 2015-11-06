@@ -170,6 +170,45 @@ function ams_uploader_content_type_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-media-field_embed_code'
+  $field_instances['node-media-field_embed_code'] = array(
+      'bundle' => 'media',
+      'default_value' => NULL,
+      'deleted' => 0,
+      'description' => '',
+      'display' => array(
+          'default' => array(
+              'label' => 'hidden',
+              'settings' => array(),
+              'type' => 'hidden',
+              'weight' => 7,
+          ),
+          'teaser' => array(
+              'label' => 'above',
+              'settings' => array(),
+              'type' => 'hidden',
+              'weight' => 0,
+          ),
+      ),
+      'entity_type' => 'node',
+      'field_name' => 'field_embed_code',
+      'label' => 'Embed Code',
+      'required' => 0,
+      'settings' => array(
+          'text_processing' => 0,
+          'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+          'active' => 1,
+          'module' => 'text',
+          'settings' => array(
+              'rows' => 5,
+          ),
+          'type' => 'text_textarea',
+          'weight' => 8,
+      ),
+  );
+
   // Exported field_instance: 'node-media-field_media_upload'
   $field_instances['node-media-field_media_upload'] = array(
     'bundle' => 'media',
@@ -312,6 +351,7 @@ function ams_uploader_content_type_field_default_field_instances() {
   t('Category');
   t('Check this if the video is for UNM personnel only.');
   t('Directory');
+  t('Embed Code');
   t('Media URL');
   t('Media Upload');
   t('Select a category to help organize your media files.');

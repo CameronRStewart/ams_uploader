@@ -6,7 +6,9 @@
 
 function generate_url($basename, $ext, $subDir, $appName) {
 
-    $fqdn = get_hostname();
+    //TODO: change function signiture to have a server var.  If that var isnt passed in, then we use fqdn.
+
+    $fqdn = get_user_configured_hostname();
 
 
     //Generate rtmp url for file
@@ -63,7 +65,7 @@ function get_filename_and_extension($uri) {
 
 }
 
-function get_hostname() {
+function get_user_configured_hostname() {
 
     //Grab the FQDN of the media stremaing server
     $result = db_query('SELECT * FROM ams_uploader_admin_vars');
@@ -132,7 +134,7 @@ function get_local_path_or_false($media_url) {
 
     $hostname_from_url = str_replace($pre_replace_to_get_hostname_from_user_entered_url, '', $media_url);
     $hostname_from_url = str_replace($post_replace_to_get_hostname_from_user_entered_url, '', $hostname_from_url);
-    $actual_hostname = get_hostname();
+    $actual_hostname = get_user_configured_hostname();
     if(file_exists($local_path) && ($hostname_from_url == $actual_hostname)) {
         return $local_path;
     }
