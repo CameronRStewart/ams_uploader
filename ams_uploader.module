@@ -66,6 +66,10 @@ function ams_uploader_node_access($node, $op, $account) {
  */
 function ams_uploader_form_media_node_form_alter(&$form, &$form_state){
 
+
+    // Hide embed code form field, user shouldn't need to control this.
+    $form['field_embed_code']['#access'] = FALSE;
+
     // For form builder functions, js must be added as such:
     $form['#attached']['js'] = array(
         drupal_get_path('module', 'ams_uploader') . '/scripts/ams_uploader.js',
